@@ -25,7 +25,7 @@ end
 local function reverse(lst)
     local reversed = {}
     for _, entry in ipairs(lst) do
-        table.insert(reversed, entry, 1)
+        table.insert(reversed, 1, entry)
     end
     return reversed
 end
@@ -58,82 +58,91 @@ local function get_call_specs()
             params = params,
             func_name = func_name,
         })
-        for _, param in ipairs(params) do
+        for _, param in ipairs(reverse(params)) do
             table.insert(param_order, param)
         end
     end
     return reverse(param_order), call_specs
 end
 
-local function get_list_length(list)
-    -- TODO how to round dowm?
-    local child_count = list:child_count()
-    if (child_count - 1) % 2 == 0 then
-        return (child_count - 1) / 2
-    else
-        return (child_count - 2) / 2
+local function call_spec_has_param(call_spec, param)
+    for _, p in ipairs(call_spec.params) do
+        if p == param then
+            return true
+        end
     end
+    return false
 end
 
 local function is_root_dir(dir)
     return vim.fn.finddir('.pytest_cache', dir) ~= ''
 end
 
-local function path_parent(path)
-    local fragments = vim.fn.split(path, '/', 1)
-    table.remove(fragments, #fragments)
-    return table.concat(fragments, '/')
+local function join_path(fragments)
+    if #fragments == 1 and fragments[1] == '' then
+        return '/'
+    else
+        return table.concat(fragments, '/')
+    end
 end
 
-local function get_root_dir(basedir)
-    local dir = basedir
-    while not is_root_dir(dir) do
-        dir = path_parent(dir)
-        if not dir then
-            vim.cmd(string.format('echoerr "%s"', "couldn't find the pytest root dir"))
-            return
+-- TODO better way to do this? (windows support?)
+local function split_path_at_root(file)
+    local dir_fragments = vim.fn.split(file, '/', 1)
+    local rel_file_fragments = {}
+    while #dir_fragments do
+        table.insert(rel_file_fragments, table.remove(dir_fragments, #dir_fragments))
+        local dir = join_path(dir_fragments)
+        if is_root_dir(dir) then
+            return dir, join_path(rel_file_fragments)
         end
     end
-    return dir
+    vim.cmd(string.format('echoerr "%s"', "couldn't find the pytest root dir"))
 end
 
 -- TODO better way?
-local function get_nodeids_path(basedir)
-    return get_root_dir(basedir) .. '/.pytest_cache/v/cache/nodeids'
+local function get_nodeids_path(rootdir)
+    return join_path{rootdir, '.pytest_cache/v/cache/nodeids'}
 end
 
-local function get_raw_nodeids(basedir)
-    local nodeids_path = get_nodeids_path(basedir)
-    print(nodeids_path)
-    P(vim.fn.json_decode(vim.fn.readfile(nodeids_path)))
+local function get_raw_nodeids(rootdir)
+    local nodeids_path = get_nodeids_path(rootdir)
     return vim.fn.json_decode(vim.fn.readfile(nodeids_path))
 end
 
-local function get_nodeids(basedir)
-    local nodeids = {}
-    for _, raw_nodeid in ipairs(get_raw_nodeids(basedir)) do
-        P('raw', raw_nodeid)
+local function parse_raw_nodeid(raw_nodeid)
         local file
         local func_name
         local rest
-        file, rest = vim.fn.split(raw_nodeid, '::')
-        if nodeids[file] == nil then
-            nodeids[file] = {}
-        end
-        func_name, rest = vim.fn.split(rest, '[')
-        if nodeids[file][func_name] == nil then
-            nodeids[file][func_name] = {}
-        end
+        file, rest = unpack(vim.fn.split(raw_nodeid, '::'))
+        func_name, rest = unpack(vim.fn.split(rest, '['))
         rest = rest:sub(1, -2)
         local params = vim.fn.split(rest, '-')
-        table.insert(nodeids[file][func_name], params)
+        return {
+            file = file,
+            func_name = func_name,
+            params = params,
+        }
+end
+
+local function get_nodeids(rootdir)
+    local nodeids = {}
+    for _, raw_nodeid in ipairs(get_raw_nodeids(rootdir)) do
+        local nodeid = parse_raw_nodeid(raw_nodeid)
+        if nodeids[nodeid.file] == nil then
+            nodeids[nodeid.file] = {}
+        end
+        if nodeids[nodeid.file][nodeid.func_name] == nil then
+            nodeids[nodeid.file][nodeid.func_name] = {}
+        end
+        table.insert(nodeids[nodeid.file][nodeid.func_name], nodeid.params)
     end
     return nodeids
 end
 
 local function get_param_values(param_order, bufnr)
-    local file = vim.api.nvim_buf_get_name(bufnr)
-    local nodeids = get_nodeids(path_parent(file))
+    local rootdir, file = split_path_at_root(vim.api.nvim_buf_get_name(bufnr))
+    local nodeids = get_nodeids(rootdir)
     if nodeids[file] == nil then
         return {}
     end
@@ -156,27 +165,13 @@ local function get_param_values(param_order, bufnr)
                     unique_values_per_param[param][value] = true
                     table.insert(ordered_values_per_param[param], value)
                 end
+                i = i + 1
             end
         end
         values_per_func[func_name] = ordered_values_per_param
     end
     return values_per_func
 end
-
--- local function get_param_values(param_order, bufnr)
---     -- TODO reverse order
---     local file = vim.api.nvim_buf_get_name(bufnr)
---     -- TODO call python
---     return {
---         ['test'] = {
---             x = {'None0', 'None1', 'None2'},
---             a = {'a0', 'a1'},
---             b = {'b'},
---             c = {'None', 'c1'},
---             i = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'},
---         },
---     }
--- end
 
 -- TODO why are these even entry types?
 local non_entry_types = {
@@ -239,24 +234,105 @@ _G.pytrize = function(bufnr)
         bufnr = 0
     end
     clear_marks(bufnr)
-    -- local param_order, call_specs = get_call_specs()
-    local param_order = {'x', 'a', 'b', 'c', 'i'}
+    local param_order, call_specs = get_call_specs()
     local param_values = get_param_values(param_order, bufnr)
-    P(param_values)
-    -- local ext_id = 1 -- TODO why doesn't automatic assignment work
-    -- for _, call_spec in ipairs(call_specs) do
-    --     for i, list_entry_node in ipairs(list_entries(call_spec.call_node)) do
-    --         local param_id = get_param_id(param_values[call_spec.func_name], call_spec.params, i)
-    --         -- local ext_id = vim.api.nvim_buf_set_extmark(
-    --         vim.api.nvim_buf_set_extmark(
-    --             bufnr,
-    --             vim.api.nvim_create_namespace('pytrize'),
-    --             list_entry_node:start(),
-    --             0,
-    --             {id = ext_id, virt_text = {{param_id, 'LineNr'}}}
-    --         )
-    --         table.insert(ext_ids, ext_id)
-    --         ext_id = ext_id + 1 -- TODO
-    --     end
-    -- end
+    local ext_id = 1 -- TODO why doesn't automatic assignment work
+    for _, call_spec in ipairs(call_specs) do
+        for i, list_entry_node in ipairs(list_entries(call_spec.call_node)) do
+            local param_id = get_param_id(param_values[call_spec.func_name], call_spec.params, i)
+            -- local ext_id = vim.api.nvim_buf_set_extmark( TODO
+            vim.api.nvim_buf_set_extmark(
+                bufnr,
+                vim.api.nvim_create_namespace('pytrize'),
+                list_entry_node:start(),
+                0,
+                {id = ext_id, virt_text = {{param_id, 'LineNr'}}}
+            )
+            table.insert(ext_ids, ext_id)
+            ext_id = ext_id + 1 -- TODO
+        end
+    end
+end
+
+local function max_length(tables)
+    local max = -1
+    for _, tbl in pairs(tables) do
+        if #tbl > max then
+            max = #tbl
+        end
+    end
+    return max
+end
+
+local function contains(tbl, value)
+    for _, v in ipairs(tbl) do
+        if v == value then
+            return true
+        end
+    end
+    return false
+end
+
+_G.pytrize_goto = function()
+    local line_num, col_num = unpack(vim.api.nvim_win_get_cursor(0))
+    local line = vim.api.nvim_buf_get_lines(0, line_num - 1, line_num, 0)[1]
+    local i, j = string.find(line, '%S*::%w*%[[%w-]*%]')
+    if i == nil then
+        vim.cmd(string.format('echoerr "%s"', "no nodeid under cursor"))
+        return
+    end
+    local param_idx = vim.fn.count(line:sub(i, col_num), '-') + 1
+    local nodeid = parse_raw_nodeid(line:sub(i, j))
+    vim.cmd('edit ' .. nodeid.file)
+    local param_order, call_specs = get_call_specs()
+    local param_values = get_param_values(param_order)
+
+    -- the param under the cursor
+    local param = param_order[param_idx]
+
+    -- find the call spec
+    local call_spec
+    for _, cs in ipairs(call_specs) do
+        if call_spec_has_param(cs, param) then
+            call_spec = cs
+            break
+        end
+    end
+    if call_spec == nil then
+        vim.cmd(string.format('echoerr "%s"', "couldn't find the declaration"))
+        return
+    end
+
+    -- find the param id of the nodeid under the cursor of the call spec
+    local param_ids = {}
+    for idx, p in ipairs(param_order) do
+        if contains(call_spec.params, p) then
+            table.insert(param_ids, nodeid.params[idx])
+        end
+    end
+    local param_id = table.concat(param_ids, '-')
+
+    -- find the list index
+    local list_idx = 1
+    local max = max_length(param_values[call_spec.func_name])
+    while true do
+        if list_idx > max then
+            vim.cmd(string.format('echoerr "%s"', "couldn't find the declaration"))
+            return
+        end
+        local pid = get_param_id(param_values[call_spec.func_name], call_spec.params, list_idx)
+        if pid:sub(2, -2) == param_id then
+            break
+        end
+        list_idx = list_idx + 1
+    end
+
+    -- find the list entry
+    local list_entry = list_entries(call_spec.call_node)[list_idx]
+    local row, _, _ = list_entry:start()
+    row = row + 1
+
+    -- goto entry
+    vim.api.nvim_win_set_cursor(0, {row, 0})
+    vim.cmd('normal $')
 end

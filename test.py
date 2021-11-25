@@ -1,10 +1,12 @@
 import pytest
 
+B = 'b'
+
 
 @pytest.mark.parametrize('i', range(10))
 @pytest.mark.parametrize('a, b, c', [
-    ({}, 'b', None),
-    ({}, 'b', {}),
+    ({}, B, None),
+    ({}, B, {}),
 ])
 @pytest.mark.parametrize('x', [
     None,
