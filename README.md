@@ -3,6 +3,8 @@
 ## Short summary
 Helps navigating `pytest.mark.parametrize` entries by virtual text and jump to declaration commands, using `pytest`s cache and `treesitter`.
 
+![pytrize](https://user-images.githubusercontent.com/23341710/143510539-c025925c-0e4c-4990-83ab-1c0da076c0f8.gif)
+
 ## What problem does this plugin solve?
 `pytest` is amazing! The only thing that bothers me is if there are many entries in in the parametrization of the test.
 For example if a test fails you might see for example:
