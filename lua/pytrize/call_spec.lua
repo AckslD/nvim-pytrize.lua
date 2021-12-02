@@ -69,8 +69,9 @@ M.has_param = function(call_spec, param)
     return false
 end
 
--- TODO why are these even entry types?
 local non_entry_types = {
+    ['comment'] = true,
+    -- TODO why are these even entry types?
     ['['] = true,
     [','] = true,
     [']'] = true,

@@ -19,7 +19,7 @@ M.split_at_root = function(file)
     local dir_fragments = vim.fn.split(file, '/', 1)
     local rel_file_fragments = {}
     while #dir_fragments do
-        table.insert(rel_file_fragments, table.remove(dir_fragments, #dir_fragments))
+        table.insert(rel_file_fragments, 1, table.remove(dir_fragments, #dir_fragments))
         local dir = join_path(dir_fragments)
         if is_root_dir(dir) then
             return dir, join_path(rel_file_fragments)

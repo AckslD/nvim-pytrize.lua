@@ -9,13 +9,17 @@ local warn = require('pytrize.warn').warn
 local function get_nodeid_at_cursor()
     local line_num, col_num = unpack(vim.api.nvim_win_get_cursor(0))
     local line = vim.api.nvim_buf_get_lines(0, line_num - 1, line_num, 0)[1]
-    local i, j = string.find(line, '%S*::%w*%[[%w-]*%]')
+    local i, j = string.find(line, '%S*::%w*%[%S*%]')
     if i == nil then
         warn("no nodeid under cursor")
         return
     end
     local param_idx = vim.fn.count(line:sub(i, col_num), '-') + 1
     local nodeid = nids.parse_raw(line:sub(i, j))
+    if nodeid == nil then
+        warn("couldn't parse nodeid under cursor")
+        return
+    end
     return param_idx, nodeid
 end
 
@@ -82,6 +86,9 @@ end
 
 M.to_declaration = function()
     local param_idx, nodeid = get_nodeid_at_cursor()
+    if param_idx == nil then
+        return
+    end
     local original_buffer = vim.api.nvim_buf_get_name(0)
     open_file(nodeid.file)
     local param_order, call_specs = cs.get()
