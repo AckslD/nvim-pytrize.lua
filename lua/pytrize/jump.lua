@@ -4,12 +4,32 @@ local cs = require('pytrize.call_spec')
 local nids = require('pytrize.nodeids')
 local params = require('pytrize.params')
 local tbls = require('pytrize.tables')
+local paths = require('pytrize.paths')
+local prompt_files = require('pytrize.input').prompt_files
 local warn = require('pytrize.warn').warn
+
+local function query_file(func_name)
+    local rootdir, _ = paths.split_at_root(vim.api.nvim_buf_get_name(0))
+    if rootdir == nil then
+        return
+    end
+    local unique_files = {}
+    for file, file_nodeids in pairs(nids.get(rootdir)) do
+        if file_nodeids[func_name] ~= nil then
+            unique_files[file] = true
+        end
+    end
+    local files = {}
+    for file, _ in pairs(unique_files) do
+        table.insert(files, file)
+    end
+    return prompt_files(files)
+end
 
 local function get_nodeid_at_cursor()
     local line_num, col_num = unpack(vim.api.nvim_win_get_cursor(0))
     local line = vim.api.nvim_buf_get_lines(0, line_num - 1, line_num, 0)[1]
-    local i, j = string.find(line, '%S*::%w*%[%S*%]')
+    local i, j = string.find(line, '%S*:?:?%w*%[%S*%]')  -- TODO how to check for zero or two :?
     if i == nil then
         warn("no nodeid under cursor")
         return
@@ -20,11 +40,19 @@ local function get_nodeid_at_cursor()
         warn("couldn't parse nodeid under cursor")
         return
     end
+    if nodeid.file == nil then
+        local file = query_file(nodeid.func_name)
+        if file == nil then
+            return
+        else
+            nodeid.file = file
+        end
+    end
     return param_idx, nodeid
 end
 
 local function open_file(file)
-    if vim.fn.bufexists(file) then
+    if vim.fn.bufexists(file) > 0 then
         vim.cmd('buffer ' .. file)
     else
         vim.cmd('edit ' .. file)

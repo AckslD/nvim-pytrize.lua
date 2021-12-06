@@ -6,6 +6,7 @@ local warn = require('pytrize.warn').warn
 M.settings = {
     no_commands = false,
     highlight = 'LineNr',
+    preferred_input = 'nui',
 }
 
 M.update = function(opts)
