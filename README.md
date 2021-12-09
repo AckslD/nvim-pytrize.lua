@@ -70,5 +70,8 @@ or similar.
 If you trigger to jump to the declaration of the parameters in this case `pytrize` will find all files in the cache that matches this test-case id and if there is more than one ask you which one to jump to.
 Currently three input methods are supported:
 * [`telescope`](https://github.com/nvim-telescope/telescope.nvim)
+  ![pytrize_input_telescope](https://user-images.githubusercontent.com/23341710/145381466-42152977-f412-425d-9ddb-cc0c4dfde4fb.gif)
 * [`nui`](https://github.com/MunifTanjim/nui.nvim)
+  ![pytrize_input_nui](https://user-images.githubusercontent.com/23341710/145381492-5e5abec0-c8c5-468c-90ee-b854e9d57146.gif)
 * `inputlist` (neovim native)
+  ![pytrize_input_builtin](https://user-images.githubusercontent.com/23341710/145381515-4afb6d1b-e6f5-4c55-bfc8-99d086f0f3b2.gif)
