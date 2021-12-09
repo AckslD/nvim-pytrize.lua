@@ -14,12 +14,11 @@ M.load = function()
     end
 end
 
-handler.prompt_files = function(prompt, files)
+handler.prompt_files = function(prompt, files, callback)
     local lines = {}
-    for file in ipairs(files) do
+    for _, file in ipairs(files) do
         table.insert(lines, Menu.item(file))
     end
-    local choice
     local menu = Menu({
         relative = "cursor",
         position = {row=1, col=0},
@@ -55,7 +54,7 @@ handler.prompt_files = function(prompt, files)
         -- on_close = function()
         -- end,
         on_submit = function(item)
-            choice = item.text
+            callback(item.text)
         end,
     })
 
@@ -64,8 +63,6 @@ handler.prompt_files = function(prompt, files)
 
     -- close menu when cursor leaves buffer
     menu:on(event.BufLeave, menu.menu_props.on_close, { once = true })
-
-    return choice
 end
 
 return M

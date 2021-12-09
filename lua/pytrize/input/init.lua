@@ -15,9 +15,15 @@ local function get_builtin_handler()
     return require('pytrize.input.builtin').load()
 end
 
+local handlers = {
+    'telescope',
+    'nui',
+    'builtin',
+}
+
 local handler_getters = {
-    nui = get_nui_handler,
     telescope = get_telescope_handler,
+    nui = get_nui_handler,
     builtin = get_builtin_handler,
 }
 
@@ -30,18 +36,18 @@ local function get_input_handler()
     if handler ~= nil then
         return handler
     end
-    for _, handler_getter in pairs(handler_getters) do
-        handler = handler_getter()
+    for _, name in ipairs(handlers) do
+        handler = handler_getters[name]()
         if handler ~= nil then
             return handler
         end
     end
 end
 
-M.prompt_files = function(files)
+M.prompt_files = function(files, callback)
     local handler = get_input_handler()
     local prompt = 'Multiple files found for the nodeid under cursor, pick the correct one:'
-    return handler.prompt_files(prompt, files)
+    handler.prompt_files(prompt, files, callback)
 end
 
 return M
