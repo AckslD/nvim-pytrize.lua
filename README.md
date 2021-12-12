@@ -69,6 +69,7 @@ where:
 
 ## Jump to fixture
 To jump to the declaration of a fixture under the cursor, do `PytrizeJumpFixture`:
+![pytrize_fixture](https://user-images.githubusercontent.com/23341710/145707800-dcd49ae2-8fb1-46cc-8895-ed78ee5365b9.gif)
 
 ## Input
 In some cases the file-path is not printed by pytest, for example when a test fails when it might look something like:
