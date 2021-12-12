@@ -1,11 +1,12 @@
 # Pytrize
 
 ## Short summary
-Helps navigating `pytest.mark.parametrize` entries by virtual text and jump to declaration commands, using `pytest`s cache and `treesitter`.
+Helps navigating `pytest.mark.parametrize` entries and fixtures by virtual text and jump to declaration commands, using `pytest`s cache and `treesitter`.
 
 ![pytrize](https://user-images.githubusercontent.com/23341710/143510539-c025925c-0e4c-4990-83ab-1c0da076c0f8.gif)
 
-## What problem does this plugin solve?
+## What problems does this plugin solve?
+### Parametrize
 `pytest` is amazing! The only thing that bothers me from time to time is if there are many entries in the parametrization of the test.
 If a test fails you might see for example:
 ```
@@ -17,8 +18,11 @@ But this is really not nice and easy to make a mistake, we should let the comput
 
 Enter `pytrize`.
 
+### Fixture
+Another issue is knowing where a certain fixture is defined and what it does.
+
 ## What does the plugin do?
-Two things:
+Three things:
 * Populates virtual text at the entries of `pytest.mark.parametrize` (see gif above), such that you can easily see which one is which.
   Done by calling `Pytrize` (and `PytrizeClear` to clear them).
   Alternatively `lua require('pytrize.api').set()` (and `lua require('pytrize.api').clear()`).
@@ -26,12 +30,15 @@ Two things:
   Done by calling `PytrizeJump`.
   Alternatively `lua require('pytrize.api').jump()`.
   See the [Input](#input)-section below for cases where the file-path is not available.
+* Provides a command to jump to the declaration of the fixture under the cursor (by name), see [fixture](#jump-to-fixture) below.
+  Done by calling `PytrizeJumpFixture`.
+  Alternatively `lua require('pytrize.api').jump_fixture()`.
 
 ## Installation
 For example using [`packer`](https://github.com/wbthomason/packer.nvim):
 ```lua
 use { -- pytrize {{{
-  '~/dev/vim-plugins/nvim-pytrize.lua',
+  '~/AckslD/nvim-pytrize.lua',
   -- uncomment if you want to lazy load
   -- cmd = {'Pytrize', 'PytrizeClear', 'PytrizeJump'},
   -- uncomment if you want to lazy load but not use the commands
@@ -39,7 +46,7 @@ use { -- pytrize {{{
   config = 'require("pytrize").setup()',
 } -- }}}
 ```
-Requires [`nvim-treesitter`](https://github.com/nvim-treesitter/nvim-treesitter).
+Requires [`nvim-treesitter`](https://github.com/nvim-treesitter/nvim-treesitter) and [`plenary.nvim`](https://github.com/nvim-lua/plenary.nvim).
 
 ## Configuration
 `require("pytrize").setup` takes an optional table of settings which currently have the default values:
@@ -59,6 +66,9 @@ where:
 * `pytest`s cache is used to find the test-case ids (eg `test.py::test[None2-a1-b-c1-8]`) which means that the tests have to be run at least once.
   Also old ids might confuse `pytrize`, but you can clear the cache with `pytest --cache-clear`.
 * `treesitter` is used to find the correct entry in `pytest.mark.parametrize`.
+
+## Jump to fixture
+To jump to the declaration of a fixture under the cursor, do `PytrizeJumpFixture`:
 
 ## Input
 In some cases the file-path is not printed by pytest, for example when a test fails when it might look something like:

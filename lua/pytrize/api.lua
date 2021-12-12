@@ -40,7 +40,12 @@ end
 
 M.jump = function()
     local jump = require('pytrize.jump')
-    jump.to_declaration()
+    jump.to_param_declaration()
+end
+
+M.jump_fixture = function()
+    local jump = require('pytrize.jump')
+    jump.to_fixture_declaration()
 end
 
 return M
