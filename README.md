@@ -38,7 +38,7 @@ Three things:
 For example using [`packer`](https://github.com/wbthomason/packer.nvim):
 ```lua
 use { -- pytrize {{{
-  '~/AckslD/nvim-pytrize.lua',
+  'AckslD/nvim-pytrize.lua',
   -- uncomment if you want to lazy load
   -- cmd = {'Pytrize', 'PytrizeClear', 'PytrizeJump'},
   -- uncomment if you want to lazy load but not use the commands
