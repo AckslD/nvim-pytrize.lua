@@ -6,6 +6,7 @@ local function setup_commands()
     vim.cmd('command Pytrize lua require("pytrize.api").set()')
     vim.cmd('command PytrizeClear lua require("pytrize.api").clear()')
     vim.cmd('command PytrizeJump lua require("pytrize.api").jump()')
+    vim.cmd('command PytrizeJumpFixture lua require("pytrize.api").jump_fixture()')
 end
 
 M.setup = function(opts)

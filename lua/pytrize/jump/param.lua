@@ -7,6 +7,7 @@ local tbls = require('pytrize.tables')
 local paths = require('pytrize.paths')
 local prompt_files = require('pytrize.input').prompt_files
 local warn = require('pytrize.warn').warn
+local open_file = require('pytrize.jump.util').open_file
 
 local function query_file(func_name, callback)
     local rootdir, _ = paths.split_at_root(vim.api.nvim_buf_get_name(0))
@@ -53,14 +54,6 @@ local function jump_to_nodeid_at_cursor(callback)
         callback(param_idx, nodeid)
     end
     return param_idx, nodeid
-end
-
-local function open_file(file)
-    if vim.fn.bufexists(file) > 0 then
-        vim.cmd('buffer ' .. file)
-    else
-        vim.cmd('edit ' .. file)
-    end
 end
 
 local function get_call_spec(call_specs, func_name, param)
@@ -117,7 +110,6 @@ local function get_position(call_spec, list_idx)
 end
 
 M.to_declaration = function()
-    -- local param_idx, nodeid = jump_to_nodeid_at_cursor()
     jump_to_nodeid_at_cursor(function(param_idx, nodeid)
         local original_buffer = vim.api.nvim_buf_get_name(0)
         open_file(nodeid.file)
