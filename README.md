@@ -46,7 +46,7 @@ use { -- pytrize {{{
   config = 'require("pytrize").setup()',
 } -- }}}
 ```
-Requires [`nvim-treesitter`](https://github.com/nvim-treesitter/nvim-treesitter) and [`plenary.nvim`](https://github.com/nvim-lua/plenary.nvim).
+Requires [`plenary.nvim`](https://github.com/nvim-lua/plenary.nvim).
 
 ## Configuration
 `require("pytrize").setup` takes an optional table of settings which currently have the default values:
