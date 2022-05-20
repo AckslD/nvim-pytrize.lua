@@ -16,11 +16,21 @@ local get_param_call_nodes = function(bufnr)
     local tsroot = get_root(bufnr)
     local query = ts_query.parse_query(
         'python',
-        '(call function: (attribute) @param) (#eq? @param "pytest.mark.parametrize")'
+        -- TODO not sure why eg (#eq? @param "pytest.mark.parametrize") does not work
+        [[
+          (decorated_definition (
+            decorator (
+              call
+                function: ((attribute) @param)
+            )
+          ))
+        ]]
     )
     local nodes = {}
     for _, node, _ in query:iter_captures(tsroot) do
+      if ts.get_node_text(node, bufnr) == 'pytest.mark.parametrize' then
         table.insert(nodes, node:parent())
+      end
     end
     return nodes
 end
@@ -81,7 +91,6 @@ local get_entry = function(entry_idx, entry_node, params, bufnr)
         idx = entry_idx,
       }}
     else
-      P(entry_node:type(), ts.get_node_text(entry_node, bufnr))
       return {{
         id = string.format('unknown (%d)', entry_idx),
         node = entry_node,
@@ -130,32 +139,42 @@ M.get_calls = function(bufnr)
   local calls = get_param_call_nodes(bufnr or 0)
   local call_specs = {}
   for _, call in ipairs(calls) do
-      -- Move to separate func, better way?
-      local decorated_definition = call:parent():parent()
-      if decorated_definition:type() ~= 'decorated_definition' then
-          warn("couldn't parse params")
-          return
-      end
-      local func = decorated_definition:field('definition')[1]
-      local func_name = ts.get_node_text(func:field('name')[1], bufnr)
+    -- Move to separate func, better way?
+    local decorated_definition = call:parent():parent()
+    if decorated_definition:type() ~= 'decorated_definition' then
+      local row = call:start()
+      warn(string.format(
+        "couldn't parse params (line %d)\n  expected `decorated_definition`\n  got `%s`",
+        row,
+        decorated_definition:type()
+      ))
+      return
+    end
+    local func = decorated_definition:field('definition')[1]
+    local func_name = ts.get_node_text(func:field('name')[1], bufnr)
 
-      local arguments = call:field('arguments')[1]
-      local params_node = arguments:child(1)
-      if params_node:type() ~= 'string' then
-          warn("couldn't parse params")
-          return
-      end
-      local params_str = ts.get_node_text(params_node, bufnr)
-      params_str = params_str:sub(2, -2)
-      local params = vim.fn.split(params_str, [[,\s*]])  -- TODO avoid vim script?
-      local entries = get_entries(call, params, bufnr)
-      if call_specs[func_name] == nil then call_specs[func_name] = {} end
-      table.insert(call_specs[func_name], {
-          node = call,
-          entries = entries,
-          params = params,
-          func_name = func_name,
-      })
+    local arguments = call:field('arguments')[1]
+    local params_node = arguments:child(1)
+    if params_node:type() ~= 'string' then
+      local row = call:start()
+      warn(string.format(
+        "couldn't parse params (line %d)\n  expected `string`\n  got `%s`",
+        row,
+        params_node:type()
+      ))
+      return
+    end
+    local params_str = ts.get_node_text(params_node, bufnr)
+    params_str = params_str:sub(2, -2)
+    local params = vim.fn.split(params_str, [[,\s*]])  -- TODO avoid vim script?
+    local entries = get_entries(call, params, bufnr)
+    if call_specs[func_name] == nil then call_specs[func_name] = {} end
+    table.insert(call_specs[func_name], {
+      node = call,
+      entries = entries,
+      params = params,
+      func_name = func_name,
+    })
   end
   return call_specs
 end

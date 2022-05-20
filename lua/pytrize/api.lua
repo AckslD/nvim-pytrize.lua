@@ -14,6 +14,9 @@ M.set = function(bufnr)
   if bufnr == nil then bufnr = 0 end
   marks.clear(bufnr)
   local call_specs_per_func = cs.get_calls(bufnr)
+  if call_specs_per_func == nil then
+    return
+  end
   for _, call_specs in pairs(call_specs_per_func) do
     for _, call_spec in ipairs(call_specs) do
       for _, entry_spec in ipairs(call_spec.entries) do
