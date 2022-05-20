@@ -1,51 +1,53 @@
 local M = {}
 
 M.clear = function(bufnr)
-    local marks = require('pytrize.marks')
-    marks.clear(bufnr)
+  local marks = require('pytrize.marks')
+
+  if bufnr == nil then bufnr = 0 end
+  marks.clear(bufnr)
 end
 
 M.set = function(bufnr)
-    local cs = require('pytrize.call_spec')
-    local params = require('pytrize.params')
-    local marks = require('pytrize.marks')
+  local cs = require('pytrize.call_spec')
+  local marks = require('pytrize.marks')
 
-    if bufnr == nil then
-        bufnr = 0
-    end
-    marks.clear(bufnr)
-    local param_order, call_specs = cs.get()
-    if param_order == nil then
-        return
-    end
-    local param_values = params.get_values(param_order, bufnr)
-    if param_values == nil then
-        return
-    end
-    local ext_id = 1 -- TODO why doesn't automatic assignment work
+  if bufnr == nil then bufnr = 0 end
+  marks.clear(bufnr)
+  local call_specs_per_func = cs.get_calls(bufnr)
+  for _, call_specs in pairs(call_specs_per_func) do
     for _, call_spec in ipairs(call_specs) do
-        for i, list_entry_node in ipairs(cs.list_entries(call_spec.call_node)) do
-            local param_id = params.get_id(param_values[call_spec.func_name], call_spec.params, i)
-            -- local ext_id = marks.set{ TODO
+      for _, entry_spec in ipairs(call_spec.entries) do
+        local entry_row = entry_spec.node:start()
+        marks.set{
+            bufnr = bufnr,
+            text = entry_spec.id,
+            row = entry_row,
+        }
+        for _, item_spec in ipairs(entry_spec.items) do
+          local item_row = item_spec.node:start()
+          if item_row ~= entry_row then
             marks.set{
                 bufnr = bufnr,
-                text = param_id,
-                row = list_entry_node:start(),
-                ext_id = ext_id,
+                text = item_spec.id,
+                row = item_spec.node:start(),
             }
-            ext_id = ext_id + 1 -- TODO
+          end
         end
+      end
     end
+  end
 end
 
 M.jump = function()
-    local jump = require('pytrize.jump')
-    jump.to_param_declaration()
+  local jump = require('pytrize.jump')
+
+  jump.to_param_declaration()
 end
 
 M.jump_fixture = function()
-    local jump = require('pytrize.jump')
-    jump.to_fixture_declaration()
+  local jump = require('pytrize.jump')
+
+  jump.to_fixture_declaration()
 end
 
 return M

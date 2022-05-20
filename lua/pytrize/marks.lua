@@ -2,6 +2,7 @@ local M = {}
 
 local settings = require('pytrize.settings').settings
 
+local next_ext_id = 1
 local ext_ids = {}
 
 local function get_ns_id()
@@ -9,12 +10,10 @@ local function get_ns_id()
 end
 
 M.clear = function(bufnr)
-    if bufnr == nil then
-        bufnr = 0
-    end
     for _, ext_id in ipairs(ext_ids) do
         vim.api.nvim_buf_del_extmark(bufnr, get_ns_id(), ext_id)
     end
+    next_ext_id = 1
 end
 
 M.set = function(opts)
@@ -23,9 +22,10 @@ M.set = function(opts)
         get_ns_id(),
         opts.row,
         0,
-        {id = opts.ext_id, virt_text = {{opts.text, settings.highlight}}}
+        {id = next_ext_id, virt_text = {{opts.text, settings.highlight}}}
     )
-    table.insert(ext_ids, opts.ext_id)
+    table.insert(ext_ids, next_ext_id)
+    next_ext_id = next_ext_id + 1
 end
 
 return M
