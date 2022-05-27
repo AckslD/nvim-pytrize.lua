@@ -10,6 +10,9 @@ local function get_ns_id()
 end
 
 M.clear = function(bufnr)
+  if bufnr == 0 then
+    bufnr = vim.fn.bufnr()
+  end
   for _, ext_id in ipairs(ext_ids[bufnr] or {}) do
     vim.api.nvim_buf_del_extmark(bufnr, get_ns_id(), ext_id)
   end
@@ -21,12 +24,17 @@ end
 local get_ext_id = function(bufnr)
   if ext_ids[bufnr] == nil then ext_ids[bufnr] = {} end
   if next_ext_ids[bufnr] == nil then next_ext_ids[bufnr] = 1 end
-  table.insert(ext_ids[bufnr], next_ext_ids[bufnr])
-  next_ext_ids[bufnr] = next_ext_ids[bufnr] + 1
+  local next_ext_id = next_ext_ids[bufnr]
+  table.insert(ext_ids[bufnr], next_ext_id)
+  next_ext_ids[bufnr] = next_ext_id + 1
+  return next_ext_id
 end
 
 M.set = function(opts)
   local bufnr = opts.bufnr
+  if bufnr == 0 then
+    bufnr = vim.fn.bufnr()
+  end
   vim.api.nvim_buf_set_extmark(
     bufnr,
     get_ns_id(),

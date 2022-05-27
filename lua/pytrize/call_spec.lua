@@ -100,13 +100,14 @@ local get_entry = function(entry_idx, entry_node, params, bufnr)
   local items = {}
   local item_nodes = get_named_children(entry_node)
   if #params ~= #item_nodes then
-    warn(string.format(
-      'number of items in entry tuple differ from number of params, %d items and %d params (line %d in %s)',
-      #item_nodes,
-      #params,
-      entry_node:start() + 1,
-      vim.fn.bufname(bufnr)
-    ))
+    -- TODO warn here?
+    -- warn(string.format(
+    --   'number of items in entry tuple differ from number of params, %d items and %d params (line %d in %s)',
+    --   #item_nodes,
+    --   #params,
+    --   entry_node:start() + 1,
+    --   vim.fn.bufname(bufnr)
+    -- ))
     return nil
   end
   for i, param in ipairs(params) do
