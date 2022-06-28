@@ -8,6 +8,14 @@ M.reverse = function(lst)
     return reversed
 end
 
+M.list_map = function(func, iterable)
+  local new = {}
+  for _, v in ipairs(iterable) do
+    table.insert(new, func(v))
+  end
+  return new
+end
+
 M.max_length = function(tables)
     local max = -1
     for _, tbl in pairs(tables) do
