@@ -2,6 +2,7 @@ local M = {}
 
 local ts = vim.treesitter
 local ts_query = ts.query
+local parse_query = ts_query.parse or ts_query.parse_query
 
 local warn = require('pytrize.warn').warn
 local tbls = require('pytrize.tables')
@@ -14,7 +15,7 @@ end
 
 local get_param_call_nodes = function(bufnr)
     local tsroot = get_root(bufnr)
-    local query = ts_query.parse_query(
+    local query = parse_query(
         'python',
         -- TODO not sure why eg (#eq? @param "pytest.mark.parametrize") does not work
         [[
