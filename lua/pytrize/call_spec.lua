@@ -62,6 +62,7 @@ end
 local LITERALS = {
   integer = true,
   float = true,
+  none = true,
   ['true'] = true,
   ['false'] = true,
 }
